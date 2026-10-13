@@ -23,18 +23,15 @@ Hệ thống quản lý và tra cứu văn bản nội bộ PILA, chạy hoàn t
 
 ## Triển khai
 
-```bash
-npm install
-npx wrangler d1 create pila-docs            # chép database_id vào wrangler.jsonc
-npx wrangler kv namespace create SESSIONS   # chép id vào wrangler.jsonc
-npx wrangler r2 bucket create pila-docs-files
-npm run db:migrate:remote
-```
+Đã tạo sẵn trên tài khoản Cloudflare: D1 `pila-docs` (đã áp dụng migration) và KV `pila-docs-sessions`; ID đã nằm trong `wrangler.jsonc`. Còn lại:
 
-1. Google Cloud Console → Credentials → tạo **OAuth client (Web)**, thêm redirect URI `https://<domain>/auth/callback`.
-2. `npx wrangler secret put GOOGLE_CLIENT_ID` và `GOOGLE_CLIENT_SECRET`.
-3. Sửa `ADMIN_EMAILS` (danh sách email admin, cách nhau bằng dấu phẩy) và `ALLOWED_DOMAIN` trong `wrangler.jsonc`.
-4. `npm run deploy`, rồi gắn custom domain trong dashboard Cloudflare nếu cần.
+1. **Bật R2** trong dashboard Cloudflare (R2 Object Storage, có thể cần thêm phương thức thanh toán; gói miễn phí 10GB), rồi `npx wrangler r2 bucket create pila-docs-files`.
+2. Google Cloud Console → Credentials → tạo **OAuth client (Web)**, thêm redirect URI `https://<domain>/auth/callback`.
+3. `npx wrangler login`, rồi `npx wrangler secret put GOOGLE_CLIENT_ID` và `GOOGLE_CLIENT_SECRET`.
+4. Sửa `ADMIN_EMAILS` (email admin, cách nhau bằng dấu phẩy) trong `wrangler.jsonc`.
+5. `npm run deploy`, rồi gắn custom domain trong dashboard nếu cần.
+
+Khi thêm migration mới: `npm run db:migrate:remote`.
 
 ## Chạy local
 

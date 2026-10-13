@@ -15,10 +15,10 @@
     "ADMIN_EMAILS": "admin@pila.vn"
   },
   "d1_databases": [
-    { "binding": "DB", "database_name": "pila-docs", "database_id": "REPLACE_WITH_D1_ID", "migrations_dir": "migrations" }
+    { "binding": "DB", "database_name": "pila-docs", "database_id": "d9ea4db7-a943-4b68-8929-f16a896b2802", "migrations_dir": "migrations" }
   ],
   "kv_namespaces": [
-    { "binding": "SESSIONS", "id": "REPLACE_WITH_KV_ID" }
+    { "binding": "SESSIONS", "id": "84f0a39b7ccd468988ba45979c2cea07" }
   ],
   "r2_buckets": [
     { "binding": "FILES", "bucket_name": "pila-docs-files" }
