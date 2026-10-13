@@ -1,0 +1,27 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "pila-docs",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "html_handling": "none",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*", "/auth/*"]
+  },
+  "vars": {
+    "ALLOWED_DOMAIN": "pila.vn",
+    "ADMIN_EMAILS": "admin@pila.vn"
+  },
+  "d1_databases": [
+    { "binding": "DB", "database_name": "pila-docs", "database_id": "REPLACE_WITH_D1_ID", "migrations_dir": "migrations" }
+  ],
+  "kv_namespaces": [
+    { "binding": "SESSIONS", "id": "REPLACE_WITH_KV_ID" }
+  ],
+  "r2_buckets": [
+    { "binding": "FILES", "bucket_name": "pila-docs-files" }
+  ]
+  // Secrets (wrangler secret put): GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
+}

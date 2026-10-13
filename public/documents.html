@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="vi"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tra cứu văn bản · PILA</title><link rel="icon" href="/assets/logo.svg"><link rel="stylesheet" href="/styles.css">
+</head><body>
+<div id="site-header"></div>
+<main class="wrap layout">
+  <aside class="panel" id="filters">
+    <div class="group"><h4>Loại văn bản</h4><div id="type-list"></div></div>
+    <div class="group"><h4>Ngày ban hành</h4>
+      <div class="field"><label for="year">Năm</label><select id="year"><option value="">Tất cả</option></select></div>
+      <div class="field"><label for="from">Từ ngày</label><input type="date" id="from"></div>
+      <div class="field"><label for="to">Đến ngày</label><input type="date" id="to"></div>
+    </div>
+    <label class="check"><input type="checkbox" id="featured"> Chỉ văn bản nổi bật</label>
+    <p><button class="btn small" id="reset" type="button">Xoá bộ lọc</button></p>
+  </aside>
+  <section>
+    <form class="toolbar" id="toolbar">
+      <div class="search"><input id="q" placeholder="Tìm theo tên, số hiệu, trích yếu…" aria-label="Tìm kiếm"><button class="btn primary">Tìm</button></div>
+      <select id="sort" aria-label="Sắp xếp">
+        <option value="">Mới ban hành</option><option value="updated">Mới cập nhật</option>
+        <option value="oldest">Cũ nhất</option><option value="title">Tên A–Z</option><option value="downloads">Tải nhiều nhất</option>
+      </select>
+    </form>
+    <p class="hint" id="count"></p>
+    <div class="list" id="results"></div>
+    <div class="pager" id="pager"></div>
+  </section>
+</main>
+<script type="module">
+  import { api, boot, docRow, bindDetail, esc } from "/app.js";
+  await boot("docs");
+  const $ = (s) => document.querySelector(s);
+  const params = new URLSearchParams(location.search);
+  const selected = new Set((params.get("type") || "").split(",").filter(Boolean));
+  let page = 1, docs = new Map();
+
+  const { types } = await api("/api/types");
+  $("#type-list").innerHTML = types.map((t) =>
+    `<label class="check"><input type="checkbox" value="${t.id}" ${selected.has(t.id) ? "checked" : ""}> ${esc(t.label)}<span class="n">${t.count}</span></label>`).join("");
+  const thisYear = new Date().getFullYear();
+  for (let y = thisYear + 1; y >= thisYear - 10; y--) $("#year").insertAdjacentHTML("beforeend", `<option>${y}</option>`);
+  $("#q").value = params.get("q") || "";
+  $("#sort").value = params.get("sort") || "";
+  $("#year").value = params.get("year") || "";
+  $("#from").value = params.get("from") || "";
+  $("#to").value = params.get("to") || "";
+  $("#featured").checked = params.get("featured") === "1";
+
+  function query() {
+    const p = new URLSearchParams();
+    const checked = [...document.querySelectorAll("#type-list input:checked")].map((i) => i.value);
+    if (checked.length) p.set("type", checked.join(","));
+    for (const k of ["q", "sort", "year", "from", "to"]) if ($("#" + k).value.trim()) p.set(k, $("#" + k).value.trim());
+    if ($("#featured").checked) p.set("featured", "1");
+    return p;
+  }
+
+  async function load() {
+    const p = query();
+    history.replaceState(null, "", p.toString() ? "?" + p : location.pathname);
+    p.set("page", page);
+    const r = await api("/api/documents?" + p);
+    docs = new Map(r.items.map((d) => [d.id, d]));
+    $("#count").textContent = `${r.total} văn bản`;
+    $("#results").innerHTML = r.items.length ? r.items.map(docRow).join("") : '<div class="empty">Không tìm thấy văn bản phù hợp.</div>';
+    const pages = Math.max(1, Math.ceil(r.total / r.pageSize));
+    $("#pager").innerHTML = pages > 1
+      ? `<button class="btn small" id="prev" ${page <= 1 ? "disabled" : ""}>← Trước</button><span>Trang ${page}/${pages}</span><button class="btn small" id="next" ${page >= pages ? "disabled" : ""}>Sau →</button>` : "";
+    $("#prev")?.addEventListener("click", () => { page--; load(); scrollTo(0, 0); });
+    $("#next")?.addEventListener("click", () => { page++; load(); scrollTo(0, 0); });
+  }
+  const refilter = () => { page = 1; load(); };
+  $("#toolbar").addEventListener("submit", (e) => { e.preventDefault(); refilter(); });
+  $("#filters").addEventListener("change", refilter);
+  $("#sort").addEventListener("change", refilter);
+  $("#reset").onclick = () => {
+    document.querySelectorAll("#filters input[type=checkbox]").forEach((i) => (i.checked = false));
+    for (const k of ["year", "from", "to", "q"]) $("#" + k).value = "";
+    refilter();
+  };
+  bindDetail($("#results"), (id) => docs.get(id));
+  load();
+</script>
+</body></html>

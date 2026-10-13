@@ -1,0 +1,4 @@
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+# Local-only login bypass (NEVER set in production): sign in as this email without Google.
+DEV_LOGIN=true

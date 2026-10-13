@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="vi"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Trang chủ · PILA Văn bản</title><link rel="icon" href="/assets/logo.svg"><link rel="stylesheet" href="/styles.css">
+</head><body>
+<div id="site-header"></div>
+<section class="hero"><div class="wrap">
+  <h1>Tra cứu văn bản PILA</h1>
+  <p>Công văn, hợp đồng, quyết định, tờ trình và các văn bản nội bộ — tìm nhanh, tải về ngay.</p>
+  <form class="search" action="/documents.html">
+    <input name="q" placeholder="Nhập tên, số hiệu hoặc nội dung văn bản…" aria-label="Tìm kiếm" autofocus>
+    <button class="btn">Tìm kiếm</button>
+  </form>
+</div></section>
+<main class="wrap">
+  <section class="block"><h2>Loại văn bản</h2><div class="chips" id="types"></div></section>
+  <section class="block" id="featured-block" hidden><h2>Văn bản nổi bật</h2><div class="grid" id="featured"></div></section>
+  <section class="block"><h2>Mới cập nhật <a href="/documents.html">Xem tất cả →</a></h2><div class="list" id="latest"></div></section>
+</main>
+<script type="module">
+  import { api, boot, docCard, docRow, bindDetail, esc } from "/app.js";
+  await boot("home");
+  const [home, { types }] = await Promise.all([api("/api/home"), api("/api/types")]);
+  const byId = new Map([...home.featured, ...home.latest].map((d) => [d.id, d]));
+  document.querySelector("#types").innerHTML = types
+    .filter((t) => t.count || t.id !== "khac")
+    .map((t) => `<a class="chip" href="/documents.html?type=${t.id}">${esc(t.label)} <b>${t.count}</b></a>`).join("");
+  if (home.featured.length) {
+    document.querySelector("#featured-block").hidden = false;
+    document.querySelector("#featured").innerHTML = home.featured.map(docCard).join("");
+  }
+  document.querySelector("#latest").innerHTML = home.latest.length
+    ? home.latest.map(docRow).join("")
+    : '<div class="empty">Chưa có văn bản nào.</div>';
+  bindDetail(document.body, (id) => byId.get(id));
+</script>
+</body></html>

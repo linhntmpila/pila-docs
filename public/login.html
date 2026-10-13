@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="vi"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Đăng nhập · PILA Văn bản</title><link rel="icon" href="/assets/logo.svg"><link rel="stylesheet" href="/styles.css">
+</head><body>
+<main class="login"><div class="box">
+  <img src="/assets/logo.svg" alt="PILA">
+  <h1>Hệ thống quản lý văn bản</h1>
+  <p>Đăng nhập bằng tài khoản Gmail công ty (@pila.vn)</p>
+  <div class="err" id="err" hidden></div>
+  <a class="btn primary" id="go" href="/auth/login">Đăng nhập với Google</a>
+</div></main>
+<script>
+  const p = new URLSearchParams(location.search);
+  const msgs = {
+    domain: "Chỉ tài khoản @pila.vn mới được truy cập. Vui lòng chọn đúng tài khoản công ty.",
+    cancelled: "Bạn đã huỷ đăng nhập.", state: "Phiên đăng nhập đã hết hạn, vui lòng thử lại.", token: "Không thể xác thực với Google, vui lòng thử lại.",
+  };
+  if (p.get("error")) { const e = document.querySelector("#err"); e.textContent = msgs[p.get("error")] || "Đăng nhập thất bại."; e.hidden = false; }
+  if (p.get("next")) document.querySelector("#go").href = "/auth/login?next=" + encodeURIComponent(p.get("next"));
+</script>
+</body></html>

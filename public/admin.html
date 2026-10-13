@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="vi"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Quản trị văn bản · PILA</title><link rel="icon" href="/assets/logo.svg"><link rel="stylesheet" href="/styles.css">
+</head><body>
+<div id="site-header"></div>
+<main class="wrap admin-layout">
+  <form class="panel" id="form">
+    <h3 id="form-title" style="margin-top:0">Đăng văn bản mới</h3>
+    <div class="drop" id="drop"><span id="drop-text">Kéo thả tệp vào đây hoặc <u>chọn tệp</u><br><small>PDF, Word, Excel, PowerPoint, TXT, ảnh · tối đa 50MB</small></span></div>
+    <input type="file" id="file" hidden accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.png,.jpg,.jpeg">
+    <div class="field"><label for="title">Tên văn bản</label><input id="title" required maxlength="300" placeholder="VD: CV 12/2026 v/v đề nghị cấp kinh phí"></div>
+    <div class="field"><label for="type">Loại văn bản</label><select id="type"></select>
+      <span class="hint" id="type-hint">Tự động nhận diện theo tên (CV, HĐ, QĐ, TTr…)</span></div>
+    <div class="two">
+      <div class="field"><label for="doc_number">Số / ký hiệu</label><input id="doc_number" maxlength="100"></div>
+      <div class="field"><label for="issued_date">Ngày ban hành</label><input type="date" id="issued_date"></div>
+    </div>
+    <div class="field"><label for="summary">Trích yếu</label><textarea id="summary" rows="3" maxlength="2000"></textarea></div>
+    <label class="check"><input type="checkbox" id="featured"> Đánh dấu nổi bật (hiện ở trang chủ)</label>
+    <p style="display:flex;gap:8px;margin-bottom:0">
+      <button class="btn primary" id="submit">Đăng văn bản</button>
+      <button class="btn" type="button" id="cancel" hidden>Huỷ sửa</button>
+    </p>
+  </form>
+  <section>
+    <div class="toolbar"><div class="search"><input id="q" placeholder="Tìm văn bản đã đăng…" aria-label="Tìm kiếm"></div></div>
+    <div class="list"><table><thead><tr><th>Văn bản</th><th>Loại</th><th>Tải</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>
+  </section>
+</main>
+<script type="module">
+  import { api, boot, esc, fmtDate, toast, TYPE_LABELS, downloadUrl } from "/app.js";
+  const user = await boot("admin");
+  if (!user.isAdmin) { location.href = "/"; await new Promise(() => {}); }
+  const $ = (s) => document.querySelector(s);
+  let editing = null, docs = new Map(), titleTouched = false;
+
+  $("#type").innerHTML = '<option value="auto">Tự động nhận diện</option>' +
+    Object.entries(TYPE_LABELS).map(([id, l]) => `<option value="${id}">${esc(l)}</option>`).join("");
+
+  // File picking / drag & drop
+  const drop = $("#drop"), fileInput = $("#file");
+  const setFile = (f) => {
+    if (!f) return;
+    const dt = new DataTransfer(); dt.items.add(f); fileInput.files = dt.files;
+    $("#drop-text").innerHTML = `<strong>${esc(f.name)}</strong>`;
+    if (!$("#title").value || !titleTouched) { $("#title").value = f.name.replace(/\.[^.]+$/, ""); hint(); }
+  };
+  drop.onclick = () => fileInput.click();
+  fileInput.onchange = () => setFile(fileInput.files[0]);
+  drop.ondragover = (e) => { e.preventDefault(); drop.classList.add("over"); };
+  drop.ondragleave = () => drop.classList.remove("over");
+  drop.ondrop = (e) => { e.preventDefault(); drop.classList.remove("over"); setFile(e.dataTransfer.files[0]); };
+
+  // Live preview of the auto-detected type
+  let t; const hint = () => { clearTimeout(t); t = setTimeout(async () => {
+    if ($("#type").value !== "auto") return;
+    const r = await api("/api/classify?title=" + encodeURIComponent($("#title").value));
+    $("#type-hint").textContent = `Sẽ phân loại: ${r.label}`;
+  }, 250); };
+  $("#title").addEventListener("input", () => { titleTouched = true; hint(); });
+  $("#type").addEventListener("change", () => { $("#type-hint").textContent = $("#type").value === "auto" ? "Tự động nhận diện theo tên (CV, HĐ, QĐ, TTr…)" : ""; hint(); });
+
+  function resetForm() {
+    editing = null; titleTouched = false;
+    $("#form").reset(); $("#drop-text").innerHTML = 'Kéo thả tệp vào đây hoặc <u>chọn tệp</u><br><small>PDF, Word, Excel, PowerPoint, TXT, ảnh · tối đa 50MB</small>';
+    $("#form-title").textContent = "Đăng văn bản mới"; $("#submit").textContent = "Đăng văn bản"; $("#cancel").hidden = true;
+    $("#type-hint").textContent = "Tự động nhận diện theo tên (CV, HĐ, QĐ, TTr…)";
+  }
+  $("#cancel").onclick = resetForm;
+
+  $("#form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!editing && !fileInput.files[0]) return toast("Vui lòng chọn tệp", true);
+    const fd = new FormData();
+    if (fileInput.files[0]) fd.set("file", fileInput.files[0]);
+    for (const k of ["title", "type", "doc_number", "issued_date", "summary"]) fd.set(k, $("#" + k).value);
+    fd.set("featured", $("#featured").checked ? "1" : "0");
+    $("#submit").disabled = true;
+    try {
+      await api(editing ? `/api/admin/documents/${editing}` : "/api/admin/documents", { method: editing ? "PUT" : "POST", body: fd });
+      toast(editing ? "Đã cập nhật văn bản" : "Đã đăng văn bản");
+      resetForm(); await load();
+    } catch (err) { toast(err.message, true); }
+    $("#submit").disabled = false;
+  });
+
+  async function load() {
+    const r = await api("/api/documents?sort=updated&pageSize=50&q=" + encodeURIComponent($("#q").value));
+    docs = new Map(r.items.map((d) => [d.id, d]));
+    $("#rows").innerHTML = r.items.length ? r.items.map((d) => `<tr data-id="${d.id}">
+      <td><strong>${esc(d.title)}</strong><div class="hint">${d.doc_number ? esc(d.doc_number) + " · " : ""}${fmtDate(d.issued_date)} · ${esc(d.file_name)}</div></td>
+      <td><span class="badge">${esc(TYPE_LABELS[d.type] ?? "Khác")}</span></td><td>${d.downloads}</td>
+      <td class="acts">
+        <button class="btn small" data-act="star" title="Nổi bật">${d.featured ? "★" : "☆"}</button>
+        <a class="btn small" href="${downloadUrl(d.id)}">Tải</a>
+        <button class="btn small" data-act="edit">Sửa</button>
+        <button class="btn small danger" data-act="del">Xoá</button></td></tr>`).join("")
+      : '<tr><td colspan="4" class="empty">Chưa có văn bản.</td></tr>';
+  }
+  let qt; $("#q").addEventListener("input", () => { clearTimeout(qt); qt = setTimeout(load, 250); });
+
+  $("#rows").addEventListener("click", async (e) => {
+    const btn = e.target.closest("[data-act]"); if (!btn) return;
+    const d = docs.get(btn.closest("tr").dataset.id);
+    try {
+      if (btn.dataset.act === "star") {
+        await api(`/api/admin/documents/${d.id}/featured`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ featured: !d.featured }) });
+        await load();
+      } else if (btn.dataset.act === "del") {
+        if (!confirm(`Xoá văn bản “${d.title}”? Không thể hoàn tác.`)) return;
+        await api(`/api/admin/documents/${d.id}`, { method: "DELETE" });
+        toast("Đã xoá văn bản"); await load();
+      } else {
+        editing = d.id; titleTouched = true;
+        $("#title").value = d.title; $("#type").value = d.type; $("#doc_number").value = d.doc_number || "";
+        $("#issued_date").value = d.issued_date || ""; $("#summary").value = d.summary || ""; $("#featured").checked = !!d.featured;
+        $("#drop-text").innerHTML = `Tệp hiện tại: <strong>${esc(d.file_name)}</strong><small>Chọn tệp mới nếu muốn thay thế</small>`;
+        $("#form-title").textContent = "Sửa văn bản"; $("#submit").textContent = "Lưu thay đổi"; $("#cancel").hidden = false; $("#type-hint").textContent = "";
+        scrollTo({ top: 0, behavior: "smooth" });
+      }
+    } catch (err) { toast(err.message, true); }
+  });
+  load();
+</script>
+</body></html>
