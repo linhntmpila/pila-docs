@@ -16,10 +16,10 @@ Hệ thống quản lý và tra cứu văn bản nội bộ PILA, chạy hoàn t
 - **Admin** (email trong `ADMIN_EMAILS`): trang `/admin.html` để đăng, sửa, thay tệp, xoá văn bản và đánh dấu nổi bật. Mọi API ghi đều kiểm tra quyền admin ở server.
 - **Tự phân loại** theo tên văn bản: `CV` → Công văn, `HĐ` → Hợp đồng, `QĐ` → Quyết định, `TTr` → Tờ trình (và `TB`, `BB`, `QC`, `KH`, `BC`). Từ khoá xuất hiện sớm nhất trong tên được ưu tiên; không nhận diện được thì là "Khác". Admin có thể chọn tay. Danh sách loại nằm ở `src/classify.ts`.
 
-## Cần thay trước khi dùng thật
+## Thương hiệu
 
-- **Logo**: `public/assets/logo.svg` đang là logo tạm. Thay bằng logo PILA chính thức (giữ tên tệp).
-- **Màu thương hiệu**: các biến `--brand`, `--accent`… ở đầu `public/styles.css` là màu tạm. Sửa tại đó là đổi toàn bộ giao diện.
+- Logo: `public/assets/logo.webp` (ngang, trên thanh đầu trang) và `logo-vertical.png` (dọc, trang đăng nhập); `favicon.png` cắt từ biểu tượng logo.
+- Màu: xanh `#005ADF` và xanh ngọc `#00DAC5` lấy từ logo, khai báo ở đầu `public/styles.css`. Nếu PILA có bộ nhận diện chính thức khác, sửa tại các biến `--brand`, `--accent`.
 
 ## Triển khai
 

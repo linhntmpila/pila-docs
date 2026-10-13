@@ -35,7 +35,7 @@ export async function boot(active) {
   const initials = esc(user.name.trim().slice(0, 1).toUpperCase());
   document.querySelector("#site-header").innerHTML = `
     <header class="site-header"><div class="wrap">
-      <a class="logo" href="/"><img src="/assets/logo.svg" alt="PILA"></a>
+      <a class="logo" href="/"><img src="/assets/logo.webp" alt="PILA"></a>
       <nav class="nav">
         <a href="/" class="${active === "home" ? "active" : ""}">Trang chủ</a>
         <a href="/documents.html" class="${active === "docs" ? "active" : ""}">Tra cứu văn bản</a>
