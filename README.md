@@ -23,9 +23,9 @@ Hệ thống quản lý và tra cứu văn bản nội bộ PILA, chạy hoàn t
 
 ## Triển khai
 
-Đã tạo sẵn trên tài khoản Cloudflare: D1 `pila-docs` (đã áp dụng migration) và KV `pila-docs-sessions`; ID đã nằm trong `wrangler.jsonc`. Còn lại:
+Đã tạo sẵn trên tài khoản Cloudflare: D1 `pila-docs` (đã áp dụng migration), KV `pila-docs-sessions` và R2 bucket `pila-docs-files`; cấu hình đã nằm trong `wrangler.jsonc`. Còn lại:
 
-1. **Bật R2** trong dashboard Cloudflare (R2 Object Storage, có thể cần thêm phương thức thanh toán; gói miễn phí 10GB), rồi `npx wrangler r2 bucket create pila-docs-files`.
+1. (Đã xong: bật R2 và tạo bucket.)
 2. Google Cloud Console → Credentials → tạo **OAuth client (Web)**, thêm redirect URI `https://<domain>/auth/callback`.
 3. `npx wrangler login`, rồi `npx wrangler secret put GOOGLE_CLIENT_ID` và `GOOGLE_CLIENT_SECRET`.
 4. Sửa `ADMIN_EMAILS` (email admin, cách nhau bằng dấu phẩy) trong `wrangler.jsonc`.
