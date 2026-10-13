@@ -23,13 +23,27 @@ Hệ thống quản lý và tra cứu văn bản nội bộ PILA, chạy hoàn t
 
 ## Triển khai
 
-Đã tạo sẵn trên tài khoản Cloudflare: D1 `pila-docs` (đã áp dụng migration), KV `pila-docs-sessions` và R2 bucket `pila-docs-files`; cấu hình đã nằm trong `wrangler.jsonc`. Còn lại:
+Đã tạo sẵn trên Cloudflare: D1 `pila-docs` (đã áp dụng migration), KV `pila-docs-sessions`, R2 bucket `pila-docs-files`; cấu hình nằm trong `wrangler.jsonc`.
 
-1. (Đã xong: bật R2 và tạo bucket.)
-2. Google Cloud Console → Credentials → tạo **OAuth client (Web)**, thêm redirect URI `https://<domain>/auth/callback`.
-3. `npx wrangler login`, rồi `npx wrangler secret put GOOGLE_CLIENT_ID` và `GOOGLE_CLIENT_SECRET`.
-4. Sửa `ADMIN_EMAILS` (email admin, cách nhau bằng dấu phẩy) trong `wrangler.jsonc`.
-5. `npm run deploy`, rồi gắn custom domain trong dashboard nếu cần.
+### Cách 1: GitHub Actions (đã cấu hình sẵn)
+
+`.github/workflows/deploy.yml` chạy typecheck, test rồi deploy khi push lên `main`, hoặc chạy tay ở tab Actions (chọn nhánh bất kỳ). Cần khai báo trong GitHub → Settings → Secrets and variables → Actions:
+
+| Secret | Lấy ở đâu |
+|---|---|
+| `CLOUDFLARE_API_TOKEN` | Cloudflare → Account API tokens → Create Token → mẫu **Edit Cloudflare Workers** |
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare dashboard → Workers & Pages (cột bên phải) |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google OAuth client (xem dưới); có thể thêm sau, workflow tự đẩy lên Worker |
+
+### Cách 2: Workers Builds (không cần token trong GitHub)
+
+Cloudflare → Workers & Pages → Create → Import a repository → chọn repo này; deploy command `npm run deploy`. Secret Google đặt ở Worker → Settings → Variables and Secrets.
+
+### Google OAuth
+
+Chưa có domain riêng thì dùng địa chỉ `https://pila-docs.<subdomain>.workers.dev`. Google Cloud Console → Credentials → **OAuth client (Web)** (nên để màn hình đồng ý ở chế độ *Internal* nếu PILA dùng Google Workspace), redirect URI: `https://pila-docs.<subdomain>.workers.dev/auth/callback`.
+
+Sửa `ADMIN_EMAILS` trong `wrangler.jsonc` thành email admin thật trước khi deploy.
 
 Khi thêm migration mới: `npm run db:migrate:remote`.
 
